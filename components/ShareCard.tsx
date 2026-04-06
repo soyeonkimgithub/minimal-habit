@@ -132,7 +132,7 @@ export default function ShareCard({ mode, streak = 0, habits, rate = 0, onClose 
           )}
 
           <p style={{ fontSize: 12, color: '#B4B2A9' }}>{today}</p>
-          <p style={{ fontSize: 12, color: '#639922', marginTop: 4, fontWeight: 500 }}>minimal-habit.vercel.app</p>
+          <p style={{ fontSize: 12, color: '#639922', marginTop: 4, fontWeight: 500 }}>minimalhabit.com</p>
         </div>
 
         {/* 버튼 */}

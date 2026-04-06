@@ -31,9 +31,9 @@ export function useHabits() {
   }
 
   async function addHabit(name: string, why: string, timeOfDay: string) {
-    if (habits.length >= 3) throw new Error('습관은 최대 3개까지만 가능해요')
+    if (habits.length >= 3) throw new Error('3 habits max. Less is more.')
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('로그인이 필요해요')
+    if (!user) throw new Error('Login required')
     const { data, error } = await supabase
       .from('habits')
       .insert({ name, why, time_of_day: timeOfDay, order_index: habits.length, user_id: user.id })
