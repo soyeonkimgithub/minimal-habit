@@ -205,6 +205,7 @@ export default function HistoryPage() {
       {/* 공유 카드 모달 */}
       {showShareCard && (
         <ShareCard
+          mode="streak"
           streak={streak}
           habits={habits}
           rate={rate}
