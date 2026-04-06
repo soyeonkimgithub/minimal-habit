@@ -4,6 +4,7 @@ import { useHabits } from '@/hooks/useHabits'
 import { useHabitLogs } from '@/hooks/useHabitLogs'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import ShareCard from '@/components/ShareCard'
 
 const TIME_LABELS: Record<string, string> = {
   morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', anytime: 'Anytime'
@@ -19,7 +20,7 @@ export default function HomePage() {
   const [timeOfDay, setTimeOfDay] = useState('anytime')
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [shared, setShared] = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -35,20 +36,6 @@ export default function HomePage() {
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
-  }
-
-  async function handleShareToday() {
-    const habitList = habits.map(h => `✓ ${h.name}`).join('\n')
-    const text = `All done today. 🌿\n\n${habitList}\n\nBuilding better habits with Minimal Habit.`
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Minimal Habit', text })
-      } else {
-        await navigator.clipboard.writeText(text)
-        setShared(true)
-        setTimeout(() => setShared(false), 2500)
-      }
-    } catch {}
   }
 
   const allDone = habits.length > 0 && habits.every(h => checkedToday.has(h.id))
@@ -77,8 +64,7 @@ export default function HomePage() {
                 ? 'Done for\ntoday. 🌿'
                 : habits.length === 0
                   ? 'Build your\nfirst habit.'
-                  : `${doneCount} of ${habits.length}\ndone today.`
-              }
+                  : `${doneCount} of ${habits.length}\ndone today.`}
             </h1>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, paddingTop: 4 }}>
@@ -161,18 +147,18 @@ export default function HomePage() {
 
         {/* 오늘 완료 공유 버튼 */}
         {allDone && (
-          <button onClick={handleShareToday} style={{
+          <button onClick={() => setShowShareCard(true)} style={{
             width: '100%',
-            background: shared ? 'var(--green-50)' : 'var(--green-400)',
-            color: shared ? 'var(--green-600)' : 'white',
-            border: shared ? '1.5px solid var(--green-100)' : 'none',
+            background: 'var(--green-400)',
+            color: 'white',
+            border: 'none',
             borderRadius: 16, padding: '14px 0',
             fontSize: 14, fontWeight: 500,
             fontFamily: 'DM Sans, sans-serif',
             cursor: 'pointer', marginBottom: 12,
             transition: 'all 0.2s ease'
           }}>
-            {shared ? '✓ Copied to clipboard!' : '🌿 Share today\'s wins'}
+            🌿 Share today's wins
           </button>
         )}
 
@@ -241,6 +227,15 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 오늘 완료 공유 카드 */}
+      {showShareCard && (
+        <ShareCard
+          mode="today"
+          habits={habits}
+          onClose={() => setShowShareCard(false)}
+        />
       )}
     </div>
   )

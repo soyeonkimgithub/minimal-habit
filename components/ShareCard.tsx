@@ -3,13 +3,14 @@ import { useRef, useState } from 'react'
 import type { Habit } from '@/hooks/useHabits'
 
 type Props = {
-  streak: number
+  mode: 'today' | 'streak'
+  streak?: number
   habits: Habit[]
-  rate: number
+  rate?: number
   onClose: () => void
 }
 
-export default function ShareCard({ streak, habits, rate, onClose }: Props) {
+export default function ShareCard({ mode, streak = 0, habits, rate = 0, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [downloading, setDownloading] = useState(false)
   const [tweeting, setTweeting] = useState(false)
@@ -21,25 +22,26 @@ export default function ShareCard({ streak, habits, rate, onClose }: Props) {
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
-        backgroundColor: '#F7F6F2',
+        backgroundColor: mode === 'today' ? '#F7F6F2' : '#F7F6F2',
         useCORS: true,
       })
       const link = document.createElement('a')
-      link.download = `minimal-habit-${streak}day-streak.png`
+      link.download = mode === 'today'
+        ? 'minimal-habit-today.png'
+        : `minimal-habit-${streak}day-streak.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setDownloading(false)
   }
 
   function handleTweet() {
     setTweeting(true)
     const habitList = habits.map(h => `✓ ${h.name}`).join(' · ')
-    const text = `${streak} days straight 🔥\n\n${habitList}\n\nBuilding better habits with @MinimalHabit\n#MinimalHabit #HabitTracking`
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
+    const text = mode === 'today'
+      ? `All done today 🌿\n\n${habitList}\n\n#MinimalHabit #HabitTracking`
+      : `${streak} days straight 🔥\n\n${habitList}\n\n#MinimalHabit #HabitTracking`
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
     setTimeout(() => setTweeting(false), 1000)
   }
 
@@ -52,12 +54,10 @@ export default function ShareCard({ streak, habits, rate, onClose }: Props) {
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}
         onClick={e => e.stopPropagation()}>
 
-        {/* 미리보기 카드 */}
+        {/* 카드 */}
         <div ref={cardRef} style={{
-          background: '#F7F6F2',
-          borderRadius: 24,
-          padding: 32,
-          fontFamily: 'DM Sans, sans-serif',
+          background: '#F7F6F2', borderRadius: 24,
+          padding: 32, fontFamily: 'DM Sans, sans-serif',
         }}>
           {/* 로고 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
@@ -74,21 +74,25 @@ export default function ShareCard({ streak, habits, rate, onClose }: Props) {
             <span style={{ fontSize: 13, color: '#5F5E5A', fontWeight: 500 }}>Minimal Habit</span>
           </div>
 
-          {/* 스트릭 메인 — 한 줄로 */}
+          {/* 메인 */}
           <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 48, lineHeight: 1, marginBottom: 8 }}>🔥</p>
+            <p style={{ fontSize: 48, lineHeight: 1, marginBottom: 8 }}>
+              {mode === 'today' ? '🌿' : '🔥'}
+            </p>
             <p style={{
               fontFamily: 'DM Serif Display, serif',
-              fontSize: 36,
-              lineHeight: 1.1,
-              color: '#2C2C2A',
-              marginBottom: 6,
+              fontSize: 36, lineHeight: 1.1,
+              color: '#2C2C2A', marginBottom: 6,
               whiteSpace: 'nowrap'
-            }}>{streak}-day streak</p>
+            }}>
+              {mode === 'today' ? 'All done today.' : `${streak}-day streak`}
+            </p>
             <p style={{ fontSize: 14, color: '#888780' }}>
-              {streak >= 30 ? 'A full month of consistency.' :
-               streak >= 14 ? 'Two weeks strong.' :
-               '7 days straight. Building something real.'}
+              {mode === 'today'
+                ? 'Every small win counts.'
+                : streak >= 30 ? 'A full month of consistency.'
+                : streak >= 14 ? 'Two weeks strong.'
+                : '7 days straight. Building something real.'}
             </p>
           </div>
 
@@ -114,22 +118,23 @@ export default function ShareCard({ streak, habits, rate, onClose }: Props) {
             ))}
           </div>
 
-          {/* 달성률 바 */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#888780', marginBottom: 6 }}>
-              <span>30-day completion</span>
-              <span style={{ color: '#639922', fontWeight: 500 }}>{rate}%</span>
+          {/* streak 모드일 때만 달성률 바 표시 */}
+          {mode === 'streak' && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#888780', marginBottom: 6 }}>
+                <span>30-day completion</span>
+                <span style={{ color: '#639922', fontWeight: 500 }}>{rate}%</span>
+              </div>
+              <div style={{ height: 6, background: '#E8E6E0', borderRadius: 100 }}>
+                <div style={{ height: 6, background: '#639922', borderRadius: 100, width: `${rate}%` }}/>
+              </div>
             </div>
-            <div style={{ height: 6, background: '#E8E6E0', borderRadius: 100 }}>
-              <div style={{ height: 6, background: '#639922', borderRadius: 100, width: `${rate}%` }}/>
-            </div>
-          </div>
+          )}
 
-          {/* 날짜 */}
           <p style={{ fontSize: 12, color: '#B4B2A9' }}>{today}</p>
         </div>
 
-        {/* 액션 버튼들 */}
+        {/* 버튼 */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleDownload} disabled={downloading}
             className="btn-primary" style={{ flex: 1 }}>
@@ -145,21 +150,11 @@ export default function ShareCard({ streak, habits, rate, onClose }: Props) {
           </button>
         </div>
 
-        {/* Cancel 버튼 — 잘 보이게 */}
         <button onClick={onClose} style={{
-          width: '100%',
-          background: 'white',
-          color: '#5F5E5A',
-          border: '1px solid #E8E6E0',
-          borderRadius: 12,
-          padding: 13,
-          fontSize: 14,
-          fontFamily: 'DM Sans, sans-serif',
-          cursor: 'pointer'
-        }}>
-          Cancel
-        </button>
-
+          width: '100%', background: 'white', color: '#5F5E5A',
+          border: '1px solid #E8E6E0', borderRadius: 12, padding: 13,
+          fontSize: 14, fontFamily: 'DM Sans, sans-serif', cursor: 'pointer'
+        }}>Cancel</button>
       </div>
     </div>
   )
