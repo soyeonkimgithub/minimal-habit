@@ -26,9 +26,9 @@ export default function ShareCard({ mode, streak = 0, habits, rate = 0, onClose 
         useCORS: true,
       })
       const link = document.createElement('a')
-      link.download = mode === 'today'
-        ? 'minimal-habit-today.png'
-        : `minimal-habit-${streak}day-streak.png`
+      const dateStr = new Date().toISOString().split('T')[0]; link.download = mode === 'today'
+        ? `minimal-habit-today-${dateStr}.png`
+        : `minimal-habit-${streak}day-streak-${dateStr}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
     } catch (e) { console.error(e) }
