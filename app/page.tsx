@@ -72,6 +72,10 @@ export default function HomePage() {
               style={{ fontSize: 13, color: 'var(--green-400)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
               History
             </button>
+            <button onClick={() => router.push('/settings')}
+              style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+              Settings
+            </button>
             <button onClick={handleLogout}
               style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
               Log out
