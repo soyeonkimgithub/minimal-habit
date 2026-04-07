@@ -2,12 +2,14 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Habit } from '@/hooks/useHabits'
 
-export function useHabitLogs(habitIds: string[]) {
+export function useHabitLogs(habits: Habit[]) {
   const supabase = useRef<SupabaseClient>(createClient()).current
   const [checkedToday, setCheckedToday] = useState<Set<string>>(new Set())
   const [streaks, setStreaks] = useState<Record<string, number>>({})
   const today = new Date().toLocaleDateString('en-CA')
+  const habitIds = habits.map(h => h.id)
 
   useEffect(() => {
     if (habitIds.length === 0) return
@@ -23,13 +25,11 @@ export function useHabitLogs(habitIds: string[]) {
 
     if (!data) return
 
-    // 오늘 체크 여부
     const todayChecked = new Set(
       data.filter(l => l.logged_date === today).map(l => l.habit_id)
     )
     setCheckedToday(todayChecked)
 
-    // 스트릭 계산
     const streakMap: Record<string, number> = {}
     for (const id of habitIds) {
       const logs = data
@@ -43,13 +43,10 @@ export function useHabitLogs(habitIds: string[]) {
       for (const date of logs) {
         if (date === cursor) {
           streak++
-          // 하루 전으로
-          const d = new Date(cursor)
+          const d = new Date(cursor + 'T00:00:00')
           d.setDate(d.getDate() - 1)
-          cursor = d.toISOString().split('T')[0]
-        } else {
-          break
-        }
+          cursor = d.toLocaleDateString('en-CA')
+        } else break
       }
       streakMap[id] = streak
     }
@@ -57,8 +54,10 @@ export function useHabitLogs(habitIds: string[]) {
   }
 
   async function toggleCheck(habitId: string) {
+    const habit = habits.find(h => h.id === habitId)
+    if (!habit) return
+
     if (checkedToday.has(habitId)) {
-      // 체크 취소
       await supabase
         .from('habit_logs')
         .delete()
@@ -71,10 +70,9 @@ export function useHabitLogs(habitIds: string[]) {
       })
       setStreaks(prev => ({ ...prev, [habitId]: Math.max(0, (prev[habitId] || 1) - 1) }))
     } else {
-      // 체크
       await supabase
         .from('habit_logs')
-        .insert({ habit_id: habitId, logged_date: today })
+        .insert({ habit_id: habitId, logged_date: today, habit_name: habit.name })
       setCheckedToday(prev => new Set(prev).add(habitId))
       setStreaks(prev => ({ ...prev, [habitId]: (prev[habitId] || 0) + 1 }))
     }

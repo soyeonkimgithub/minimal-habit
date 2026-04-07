@@ -13,7 +13,7 @@ const TIMES = ['morning', 'afternoon', 'evening', 'anytime']
 
 export default function HomePage() {
   const { habits, loading, addHabit, deleteHabit } = useHabits()
-  const { checkedToday, streaks, toggleCheck } = useHabitLogs(habits.map(h => h.id))
+  const { checkedToday, streaks, toggleCheck } = useHabitLogs(habits)
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [why, setWhy] = useState('')

@@ -28,6 +28,7 @@ export default function HistoryPage() {
   const [logs, setLogs] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [showShareCard, setShowShareCard] = useState(false)
+  const [dailyHabits, setDailyHabits] = useState<Record<string, {id: string, name: string, done: boolean}[]>>({})
   const [popup, setPopup] = useState<Popup | null>(null)
   const router = useRouter()
   const days = getLast30Days()
@@ -47,7 +48,7 @@ export default function HistoryPage() {
   async function fetchLogs() {
     const { data } = await supabase
       .from('habit_logs')
-      .select('habit_id, logged_date')
+      .select('habit_id, logged_date, habit_name')
       .in('habit_id', habits.map(h => h.id))
       .gte('logged_date', days[0])
     if (!data) return
@@ -55,6 +56,17 @@ export default function HistoryPage() {
     for (const h of habits) map[h.id] = []
     for (const log of data) { if (map[log.habit_id]) map[log.habit_id].push(log.logged_date) }
     setLogs(map)
+
+    // 날짜별 실제 habit_name 기록 저장
+    const nameMap: Record<string, {id: string, name: string, done: boolean}[]> = {}
+    for (const log of data) {
+      if (!nameMap[log.logged_date]) nameMap[log.logged_date] = []
+      if (log.habit_name) {
+        const exists = nameMap[log.logged_date].find(x => x.id === log.habit_id)
+        if (!exists) nameMap[log.logged_date].push({ id: log.habit_id, name: log.habit_name, done: true })
+      }
+    }
+    setDailyHabits(nameMap)
     setLoading(false)
   }
 
@@ -279,33 +291,26 @@ export default function HistoryPage() {
             {formatDate(popup.date)}
           </p>
 
-          {/* 습관 목록 */}
+          {/* 습관 목록 — 그날 실제 기록 기준 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {habits.map(habit => {
-              const done = logs[habit.id]?.includes(popup.date)
-              return (
+            {dailyHabits[popup.date] && dailyHabits[popup.date].length > 0 ? (
+              dailyHabits[popup.date].map(habit => (
                 <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{
                     width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                    background: done ? '#639922' : '#E8E6E0',
+                    background: '#639922',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    {done ? (
-                      <svg width="9" height="7" viewBox="0 0 12 9" fill="none">
-                        <path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#B4B2A9' }}/>
-                    )}
+                    <svg width="9" height="7" viewBox="0 0 12 9" fill="none">
+                      <path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                  <span style={{
-                    fontSize: 13, color: done ? 'var(--text)' : 'var(--muted)',
-                    fontWeight: done ? 500 : 400,
-                    textDecoration: done ? 'none' : 'none'
-                  }}>{habit.name}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{habit.name}</span>
                 </div>
-              )
-            })}
+              ))
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--muted)' }}>No habits completed.</p>
+            )}
           </div>
 
           {/* 꼬리 삼각형 */}
