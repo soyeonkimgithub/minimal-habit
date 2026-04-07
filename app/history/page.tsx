@@ -162,8 +162,19 @@ export default function HistoryPage() {
                       aspectRatio: '1', borderRadius: 6,
                       background: getColor(getRatio(date), date),
                       outline: isToday ? '2px solid #639922' : 'none',
-                      outlineOffset: 2
-                    }}/>
+                      outlineOffset: 2,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'flex-end',
+                      padding: '2px 3px',
+                    }}>
+                      <span style={{
+                        fontSize: 8,
+                        lineHeight: 1,
+                        color: getRatio(date) > 0 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.25)',
+                        fontFamily: 'DM Sans, sans-serif',
+                      }}>{new Date(date + 'T00:00:00').getDate()}</span>
+                    </div>
                   )
                 })}
               </div>
