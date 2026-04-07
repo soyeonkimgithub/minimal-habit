@@ -16,20 +16,33 @@ function getLast30Days(): string[] {
 
 const WEEK_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+type Popup = {
+  date: string
+  x: number
+  y: number
+}
+
 export default function HistoryPage() {
   const supabase = useRef<SupabaseClient>(createClient()).current
   const { habits, loading: habitsLoading } = useHabits()
   const [logs, setLogs] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [showShareCard, setShowShareCard] = useState(false)
+  const [popup, setPopup] = useState<Popup | null>(null)
   const router = useRouter()
   const days = getLast30Days()
-  const today = days[days.length - 1]
+  const today = new Date().toLocaleDateString('en-CA')
 
   useEffect(() => {
     if (habits.length === 0) { setLoading(false); return }
     fetchLogs()
   }, [habits.map(h => h.id).join(',')])
+
+  useEffect(() => {
+    function handleClick() { setPopup(null) }
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
+  }, [])
 
   async function fetchLogs() {
     const { data } = await supabase
@@ -69,13 +82,30 @@ export default function HistoryPage() {
     return streak
   }
 
+  function handleCellClick(e: React.MouseEvent, date: string) {
+    if (date > today) return
+    e.stopPropagation()
+    const rect = (e.target as HTMLElement).getBoundingClientRect()
+    setPopup({
+      date,
+      x: rect.left + rect.width / 2,
+      y: rect.top
+    })
+  }
+
+  function formatDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric'
+    })
+  }
+
   const pastDays = days.filter(d => d <= today)
   const perfectDays = pastDays.filter(d => getRatio(d) === 1).length
   const rate = pastDays.length > 0 ? Math.round((perfectDays / pastDays.length) * 100) : 0
   const streak = calcStreak()
   const has7DayStreak = streak >= 7
 
-  const firstDayOfWeek = new Date(days[0]).getDay()
+  const firstDayOfWeek = new Date(days[0] + 'T00:00:00').getDay()
   const paddedDays: (string | null)[] = [...Array(firstDayOfWeek).fill(null), ...days]
   const weeks: (string | null)[][] = []
   for (let i = 0; i < paddedDays.length; i += 7) weeks.push(paddedDays.slice(i, i + 7))
@@ -100,7 +130,7 @@ export default function HistoryPage() {
         <h1 style={{ fontSize: 30, marginBottom: 6 }}>Last 30 days</h1>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 32 }}>The pattern reveals the direction.</p>
 
-        {/* 7일 연속 특별 공유 카드 */}
+        {/* 7일 연속 공유 카드 */}
         {has7DayStreak && (
           <div style={{
             background: 'var(--green-50)', border: '1.5px solid var(--green-100)',
@@ -126,7 +156,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* 요약 카드 */}
+        {/* 요약 */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 32 }}>
           {[
             { value: `${rate}%`, label: 'completion' },
@@ -144,42 +174,56 @@ export default function HistoryPage() {
         </div>
 
         {/* 히트맵 */}
-        <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14, fontWeight: 500 }}>30-day heatmap</p>
+        <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)', marginBottom: 16, position: 'relative' }}>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4, fontWeight: 500 }}>30-day heatmap</p>
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 14, opacity: 0.7 }}>Tap any day to see details</p>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 8 }}>
             {WEEK_LABELS.map(d => (
               <p key={d} style={{ textAlign: 'center', fontSize: 10, color: '#B4B2A9' }}>{d}</p>
             ))}
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {weeks.map((week, wi) => (
               <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
                 {week.map((date, di) => {
                   if (!date) return <div key={di} style={{ aspectRatio: '1' }}/>
+                  const ratio = getRatio(date)
                   const isToday = date === today
+                  const isFuture = date > today
                   return (
-                    <div key={date} style={{
-                      aspectRatio: '1', borderRadius: 6,
-                      background: getColor(getRatio(date), date),
-                      outline: isToday ? '2px solid #639922' : 'none',
-                      outlineOffset: 2,
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'flex-end',
-                      padding: '2px 3px',
-                    }}>
+                    <div
+                      key={date}
+                      onClick={(e) => handleCellClick(e, date)}
+                      style={{
+                        aspectRatio: '1', borderRadius: 6,
+                        background: getColor(ratio, date),
+                        outline: isToday ? '2px solid #639922' : 'none',
+                        outlineOffset: 2,
+                        cursor: isFuture ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-end',
+                        padding: '2px 3px',
+                        transition: 'opacity 0.1s',
+                      }}
+                    >
                       <span style={{
-                        fontSize: 8,
-                        lineHeight: 1,
-                        color: getRatio(date) > 0 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.25)',
+                        fontSize: 8, lineHeight: 1,
+                        color: ratio > 0 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.25)',
                         fontFamily: 'DM Sans, sans-serif',
-                      }}>{new Date(date + 'T00:00:00').getDate()}</span>
+                        pointerEvents: 'none'
+                      }}>
+                        {new Date(date + 'T00:00:00').getDate()}
+                      </span>
                     </div>
                   )
                 })}
               </div>
             ))}
           </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, justifyContent: 'flex-end' }}>
             <span style={{ fontSize: 10, color: '#B4B2A9' }}>0%</span>
             {['#E8E6E0', '#C0DD97', '#97C459', '#639922'].map(c => (
@@ -213,7 +257,70 @@ export default function HistoryPage() {
 
       </div>
 
-      {/* 공유 카드 모달 */}
+      {/* 날짜 클릭 팝업 */}
+      {popup && (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            left: Math.min(popup.x - 110, window.innerWidth - 240),
+            top: popup.y - 140,
+            width: 220,
+            background: 'white',
+            borderRadius: 14,
+            padding: '14px 16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            border: '1px solid var(--border)',
+            zIndex: 100,
+          }}
+        >
+          {/* 날짜 */}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10, fontWeight: 500 }}>
+            {formatDate(popup.date)}
+          </p>
+
+          {/* 습관 목록 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {habits.map(habit => {
+              const done = logs[habit.id]?.includes(popup.date)
+              return (
+                <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    background: done ? '#639922' : '#E8E6E0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {done ? (
+                      <svg width="9" height="7" viewBox="0 0 12 9" fill="none">
+                        <path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#B4B2A9' }}/>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: 13, color: done ? 'var(--text)' : 'var(--muted)',
+                    fontWeight: done ? 500 : 400,
+                    textDecoration: done ? 'none' : 'none'
+                  }}>{habit.name}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* 꼬리 삼각형 */}
+          <div style={{
+            position: 'absolute', bottom: -6, left: '50%',
+            transform: 'translateX(-50%)',
+            width: 12, height: 6,
+            background: 'white',
+            clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+            borderBottom: '1px solid var(--border)'
+          }}/>
+        </div>
+      )}
+
+      {/* 공유 카드 */}
       {showShareCard && (
         <ShareCard
           mode="streak"
