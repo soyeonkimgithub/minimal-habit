@@ -7,7 +7,7 @@ export function useHabitLogs(habitIds: string[]) {
   const supabase = useRef<SupabaseClient>(createClient()).current
   const [checkedToday, setCheckedToday] = useState<Set<string>>(new Set())
   const [streaks, setStreaks] = useState<Record<string, number>>({})
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toLocaleDateString('en-CA')
 
   useEffect(() => {
     if (habitIds.length === 0) return
