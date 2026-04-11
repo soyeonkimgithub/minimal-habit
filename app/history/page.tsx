@@ -25,13 +25,13 @@ type Popup = {
 export default function HistoryPage() {
   const supabase = useRef<SupabaseClient>(createClient()).current
   const { habits: activeHabits, loading: habitsLoading } = useHabits()
-  const [allHabits, setAllHabits] = useState<{id: string, name: string}[]>([])
+  const [allHabits, setAllHabits] = useState<Habit[]>([])
 
   useEffect(() => {
     async function fetchAllHabits() {
       const { data } = await supabase
         .from('habits')
-        .select('id, name')
+        .select('id, name, why, time_of_day, is_active')
       if (data) setAllHabits(data)
     }
     fetchAllHabits()
