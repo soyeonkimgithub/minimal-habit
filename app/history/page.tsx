@@ -24,7 +24,20 @@ type Popup = {
 
 export default function HistoryPage() {
   const supabase = useRef<SupabaseClient>(createClient()).current
-  const { habits, loading: habitsLoading } = useHabits()
+  const { habits: activeHabits, loading: habitsLoading } = useHabits()
+  const [allHabits, setAllHabits] = useState<{id: string, name: string}[]>([])
+
+  useEffect(() => {
+    async function fetchAllHabits() {
+      const { data } = await supabase
+        .from('habits')
+        .select('id, name')
+      if (data) setAllHabits(data)
+    }
+    fetchAllHabits()
+  }, [])
+
+  const habits = allHabits.length > 0 ? allHabits : activeHabits
   const [logs, setLogs] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [showShareCard, setShowShareCard] = useState(false)
@@ -71,8 +84,19 @@ export default function HistoryPage() {
   }
 
   function getRatio(date: string): number {
-    if (habits.length === 0) return 0
-    return habits.filter(h => logs[h.id]?.includes(date)).length / habits.length
+    const dayLogs = Object.values(logs).filter(dates => dates.includes(date))
+    const totalThatDay = Object.keys(logs).filter(id => {
+      const habitLogs = logs[id]
+      return habitLogs && habitLogs.length > 0
+    }).length
+    if (totalThatDay === 0) return 0
+    // 그날 체크된 수 / 그날 존재했던 습관 수
+    const checkedCount = dayLogs.length
+    // habit_logs에서 그날 로그 수로 계산
+    const allLogsForDay = Object.values(logs).filter(dates => dates.includes(date)).length
+    const habitsExistedThatDay = dailyHabits[date]?.length || habits.length
+    if (habitsExistedThatDay === 0) return 0
+    return allLogsForDay / habitsExistedThatDay
   }
 
   function getColor(ratio: number, date: string): string {
@@ -245,27 +269,7 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* 습관별 바 */}
-        <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16, fontWeight: 500 }}>By habit</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {habits.map(habit => {
-              const done = logs[habit.id]?.filter(d => d <= today).length || 0
-              const pct = Math.round((done / pastDays.length) * 100)
-              return (
-                <div key={habit.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                    <span style={{ color: 'var(--text)' }}>{habit.name}</span>
-                    <span style={{ color: 'var(--green-400)', fontWeight: 500 }}>{pct}%</span>
-                  </div>
-                  <div style={{ height: 6, background: 'var(--border)', borderRadius: 100 }}>
-                    <div style={{ height: 6, background: 'var(--green-400)', borderRadius: 100, width: `${pct}%`, transition: 'width 0.6s ease' }}/>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+
 
       </div>
 
