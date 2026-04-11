@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useHabits } from '@/hooks/useHabits'
 import { useRouter } from 'next/navigation'
 import ShareCard from '@/components/ShareCard'
+import type { Habit } from '@/hooks/useHabits'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 function getLast30Days(): string[] {
