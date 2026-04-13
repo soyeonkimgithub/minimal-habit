@@ -49,9 +49,9 @@ export default function HistoryPage() {
   const today = new Date().toLocaleDateString('en-CA')
 
   useEffect(() => {
-    if (habits.length === 0) { setLoading(false); return }
+    if (allHabits.length === 0) return
     fetchLogs()
-  }, [habits.map(h => h.id).join(',')])
+  }, [allHabits.map(h => h.id).join(',')])
 
   useEffect(() => {
     function handleClick() { setPopup(null) }
@@ -63,7 +63,7 @@ export default function HistoryPage() {
     const { data } = await supabase
       .from('habit_logs')
       .select('habit_id, logged_date, habit_name')
-      .in('habit_id', habits.map(h => h.id))
+      .in('habit_id', allHabits.map(h => h.id))
       .gte('logged_date', days[0])
     if (!data) return
     const map: Record<string, string[]> = {}
