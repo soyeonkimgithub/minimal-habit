@@ -335,7 +335,7 @@ export default function HistoryPage() {
         <ShareCard
           mode="streak"
           streak={streak}
-          habits={habits}
+          habits={activeHabits}
           rate={rate}
           onClose={() => setShowShareCard(false)}
         />
