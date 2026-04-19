@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useHabits } from '@/hooks/useHabits'
 import { useRouter } from 'next/navigation'
 import ShareCard from '@/components/ShareCard'
+import { useLang } from '@/context/LanguageContext'
 import type { Habit } from '@/hooks/useHabits'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -42,9 +43,16 @@ export default function HistoryPage() {
   const [logs, setLogs] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [showShareCard, setShowShareCard] = useState(false)
+  const { t } = useLang()
+  const [displayName, setDisplayName] = useState('')
   const [dailyHabits, setDailyHabits] = useState<Record<string, {id: string, name: string, done: boolean}[]>>({})
   const [popup, setPopup] = useState<Popup | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const saved = localStorage.getItem('displayName') || ''
+    setDisplayName(saved)
+  }, [])
   const days = getLast30Days()
   const today = new Date().toLocaleDateString('en-CA')
 
@@ -161,11 +169,11 @@ export default function HistoryPage() {
 
         <button onClick={() => router.push('/')}
           style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 32, padding: 0, fontFamily: 'DM Sans, sans-serif' }}>
-          ← Back
+          {t.back}
         </button>
 
-        <h1 style={{ fontSize: 30, marginBottom: 6 }}>Last 30 days</h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 32 }}>The pattern reveals the direction.</p>
+        <h1 style={{ fontSize: 30, marginBottom: 6 }}>{t.history_title}</h1>
+        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 32 }}>{t.history_sub}</p>
 
         {/* 7일 연속 공유 카드 */}
         {has7DayStreak && (
@@ -180,7 +188,7 @@ export default function HistoryPage() {
             <p style={{ fontSize: 13, color: 'var(--green-600)', opacity: 0.8, marginBottom: 16, lineHeight: 1.5 }}>
               {streak >= 30 ? 'A full month of consistency. Remarkable.'
                 : streak >= 14 ? 'Two weeks strong. Keep going.'
-                : '7 days straight. You\'re building something real.'}
+                : t.back === '← Back' ? '7 days straight. You\'re building something real.' : '7일 연속. 진짜 습관이 되고 있어.'}
             </p>
             <button onClick={() => setShowShareCard(true)} style={{
               background: 'var(--green-400)', color: 'white',
@@ -196,9 +204,9 @@ export default function HistoryPage() {
         {/* 요약 */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 32 }}>
           {[
-            { value: `${rate}%`, label: 'completion' },
-            { value: `${perfectDays}d`, label: 'perfect days' },
-            { value: `${streak}d`, label: 'current streak' },
+            { value: `${rate}%`, label: t.completion },
+            { value: `${perfectDays}d`, label: t.perfect_days },
+            { value: `${streak}d`, label: t.current_streak },
           ].map(({ value, label }) => (
             <div key={label} style={{
               background: 'var(--bg)', borderRadius: 16, padding: '16px 12px',
@@ -212,8 +220,8 @@ export default function HistoryPage() {
 
         {/* 히트맵 */}
         <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)', marginBottom: 16, position: 'relative' }}>
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4, fontWeight: 500 }}>30-day heatmap</p>
-          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 14, opacity: 0.7 }}>Tap any day to see details</p>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4, fontWeight: 500 }}>{t.heatmap}</p>
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 14, opacity: 0.7 }}>{t.tap_day}</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 8 }}>
             {WEEK_LABELS.map(d => (
