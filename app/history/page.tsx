@@ -93,14 +93,14 @@ export default function HistoryPage() {
   }
 
   function getRatio(date: string): number {
-    // 그날 실제로 체크된 습관 수
     const checkedCount = Object.values(logs).filter(dates => dates.includes(date)).length
     if (checkedCount === 0) return 0
-    // 그날 존재했던 습관 수 — dailyHabits에 기록된 수 사용
-    // 없으면 현재 활성 습관 수로 fallback
-    const habitsExistedThatDay = dailyHabits[date]?.length || activeHabits.length
-    if (habitsExistedThatDay === 0) return 0
-    return checkedCount / habitsExistedThatDay
+    // 현재 활성 습관 수와 그날 체크된 수 중 큰 값을 분모로
+    // 이렇게 하면 현재 습관 3개 기준으로 계산되고
+    // 과거에 더 많이 체크했어도 100% 초과하지 않음
+    const total = Math.max(activeHabits.length, checkedCount)
+    if (total === 0) return 0
+    return checkedCount / total
   }
 
   function getColor(ratio: number, date: string): string {
