@@ -27,13 +27,18 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 로그인 안 한 유저가 보호된 페이지 접근 시 → /login으로
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  const { pathname } = request.nextUrl
+  const isPublic =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/onboarding')
+
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // 로그인한 유저가 /login 접근 시 → 홈으로
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
+  if (user && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 

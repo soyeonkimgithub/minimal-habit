@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -11,6 +11,13 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const onboarded = localStorage.getItem('onboarded')
+    if (!onboarded) {
+      router.push('/onboarding')
+    }
+  }, [])
 
   async function handleSubmit() {
     setLoading(true)
@@ -75,6 +82,13 @@ export default function LoginPage() {
             style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: '8px 0', cursor: 'pointer', background: 'none', border: 'none' }}>
             {isSignUp ? 'Already have an account → Log in' : 'New here → Create account'}
           </button>
+          {!isSignUp && (
+            <button
+              onClick={() => router.push('/forgot-password')}
+              style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: '4px 0', cursor: 'pointer', background: 'none', border: 'none', opacity: 0.7 }}>
+              Forgot password?
+            </button>
+          )}
         </div>
 
       </div>
