@@ -93,19 +93,14 @@ export default function HistoryPage() {
   }
 
   function getRatio(date: string): number {
-    const dayLogs = Object.values(logs).filter(dates => dates.includes(date))
-    const totalThatDay = Object.keys(logs).filter(id => {
-      const habitLogs = logs[id]
-      return habitLogs && habitLogs.length > 0
-    }).length
-    if (totalThatDay === 0) return 0
-    // 그날 체크된 수 / 그날 존재했던 습관 수
-    const checkedCount = dayLogs.length
-    // habit_logs에서 그날 로그 수로 계산
-    const allLogsForDay = Object.values(logs).filter(dates => dates.includes(date)).length
-    const habitsExistedThatDay = dailyHabits[date]?.length || habits.length
+    // 그날 실제로 체크된 습관 수
+    const checkedCount = Object.values(logs).filter(dates => dates.includes(date)).length
+    if (checkedCount === 0) return 0
+    // 그날 존재했던 습관 수 — dailyHabits에 기록된 수 사용
+    // 없으면 현재 활성 습관 수로 fallback
+    const habitsExistedThatDay = dailyHabits[date]?.length || activeHabits.length
     if (habitsExistedThatDay === 0) return 0
-    return allLogsForDay / habitsExistedThatDay
+    return checkedCount / habitsExistedThatDay
   }
 
   function getColor(ratio: number, date: string): string {
