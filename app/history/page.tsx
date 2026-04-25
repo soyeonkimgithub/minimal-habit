@@ -79,11 +79,12 @@ export default function HistoryPage() {
     for (const log of data) { if (map[log.habit_id]) map[log.habit_id].push(log.logged_date) }
     setLogs(map)
 
-    // 날짜별 실제 habit_name 기록 저장
+    // 날짜별 실제 habit_name 기록 저장 (중복 제거)
     const nameMap: Record<string, {id: string, name: string, done: boolean}[]> = {}
     for (const log of data) {
       if (!nameMap[log.logged_date]) nameMap[log.logged_date] = []
       if (log.habit_name) {
+        // habit_id 중복 제거
         const exists = nameMap[log.logged_date].find(x => x.id === log.habit_id)
         if (!exists) nameMap[log.logged_date].push({ id: log.habit_id, name: log.habit_name, done: true })
       }

@@ -3,15 +3,16 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/context/LanguageContext'
+import { useProfile } from '@/hooks/useProfile'
 
 export default function SettingsPage() {
   const supabase = createClient()
   const router = useRouter()
   const { t, lang, setLang } = useLang()
+  const { profile, loading, updateProfile } = useProfile()
 
   const [displayName, setDisplayName] = useState('')
   const [nameSaved, setNameSaved] = useState(false)
-
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -20,21 +21,27 @@ export default function SettingsPage() {
   const [pwError, setPwError] = useState('')
 
   useEffect(() => {
-    const saved = localStorage.getItem('displayName') || ''
-    setDisplayName(saved)
-  }, [])
+    if (!loading && profile.display_name) {
+      setDisplayName(profile.display_name)
+    }
+  }, [loading, profile.display_name])
 
-  function handleSaveName() {
-    localStorage.setItem('displayName', displayName)
+  async function handleSaveName() {
+    await updateProfile({ display_name: displayName })
     setNameSaved(true)
     setTimeout(() => setNameSaved(false), 2000)
+  }
+
+  async function handleSetLang(l: 'en' | 'ko') {
+    setLang(l)
+    await updateProfile({ language: l })
   }
 
   async function handleChangePassword() {
     setPwError('')
     setPwSuccess(false)
-    if (newPassword.length < 6) return setPwError('Password must be at least 6 characters')
-    if (newPassword !== confirmPassword) return setPwError('Passwords do not match')
+    if (newPassword.length < 6) return setPwError(lang === 'ko' ? '비밀번호는 6자 이상이어야 해' : 'Password must be at least 6 characters')
+    if (newPassword !== confirmPassword) return setPwError(lang === 'ko' ? '비밀번호가 일치하지 않아' : 'Passwords do not match')
     setPwLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user?.email) return setPwLoading(false)
@@ -43,7 +50,7 @@ export default function SettingsPage() {
     })
     if (signInError) {
       setPwLoading(false)
-      return setPwError('Current password is incorrect')
+      return setPwError(lang === 'ko' ? '현재 비밀번호가 틀렸어' : 'Current password is incorrect')
     }
     const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
     if (updateError) { setPwError(updateError.message) }
@@ -57,7 +64,6 @@ export default function SettingsPage() {
   return (
     <div className="app-shell">
       <div className="app-card">
-
         <button onClick={() => router.push('/')}
           style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 32, padding: 0, fontFamily: 'DM Sans, sans-serif' }}>
           {t.back}
@@ -68,9 +74,7 @@ export default function SettingsPage() {
 
         {/* 이름 설정 */}
         <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)', marginBottom: 16 }}>
-          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>
-            {t.display_name}
-          </p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>{t.display_name}</p>
           <div style={{ display: 'flex', gap: 10 }}>
             <input
               className="input-field"
@@ -80,32 +84,26 @@ export default function SettingsPage() {
               onKeyDown={e => e.key === 'Enter' && handleSaveName()}
               style={{ flex: 1 }}
             />
-            <button onClick={handleSaveName}
-              style={{
-                background: 'var(--green-400)', color: 'white',
-                border: 'none', borderRadius: 12, padding: '0 20px',
-                fontSize: 14, fontWeight: 500,
-                fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}>
+            <button onClick={handleSaveName} style={{
+              background: 'var(--green-400)', color: 'white',
+              border: 'none', borderRadius: 12, padding: '0 20px',
+              fontSize: 14, fontWeight: 500,
+              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', whiteSpace: 'nowrap'
+            }}>
               {t.save_name}
             </button>
           </div>
           {nameSaved && (
-            <p style={{ fontSize: 13, color: 'var(--green-400)', marginTop: 8, fontWeight: 500 }}>
-              {t.name_saved}
-            </p>
+            <p style={{ fontSize: 13, color: 'var(--green-400)', marginTop: 8, fontWeight: 500 }}>{t.name_saved}</p>
           )}
         </div>
 
         {/* 언어 설정 */}
         <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)', marginBottom: 16 }}>
-          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>
-            {t.language}
-          </p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>{t.language}</p>
           <div style={{ display: 'flex', gap: 10 }}>
             {(['en', 'ko'] as const).map(l => (
-              <button key={l} onClick={() => setLang(l)} style={{
+              <button key={l} onClick={() => handleSetLang(l)} style={{
                 flex: 1, padding: '10px 0', fontSize: 14, borderRadius: 12, border: '1px solid',
                 borderColor: lang === l ? 'var(--green-100)' : 'var(--border)',
                 background: lang === l ? 'var(--green-50)' : 'white',
@@ -120,9 +118,7 @@ export default function SettingsPage() {
 
         {/* 비밀번호 변경 */}
         <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>
-            {t.change_password}
-          </p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 16 }}>{t.change_password}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input className="input-field" type="password" placeholder={t.current_pw}
               value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}/>
@@ -139,7 +135,6 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
-
       </div>
     </div>
   )
