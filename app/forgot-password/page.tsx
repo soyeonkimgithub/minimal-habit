@@ -25,6 +25,11 @@ export default function ForgotPasswordPage() {
     setLoading(false)
   }
 
+  async function handleBackToLogin() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   if (sent) return (
     <div className="app-shell">
       <div className="app-card" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -37,7 +42,7 @@ export default function ForgotPasswordPage() {
             ? `${email} 로 비밀번호 재설정 링크를 보냈어.`
             : `We sent a password reset link to ${email}.`}
         </p>
-        <button onClick={() => router.push('/login')} className="btn-ghost">
+        <button onClick={handleBackToLogin} className="btn-ghost">
           {lang === 'ko' ? '← 로그인으로' : '← Back to login'}
         </button>
       </div>
@@ -47,7 +52,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="app-shell">
       <div className="app-card" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <button onClick={() => router.push('/login')}
+        <button onClick={handleBackToLogin}
           style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 32, padding: 0, fontFamily: 'DM Sans, sans-serif', textAlign: 'left' }}>
           {lang === 'ko' ? '← 돌아가기' : '← Back'}
         </button>
