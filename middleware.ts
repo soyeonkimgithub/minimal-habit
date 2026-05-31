@@ -32,7 +32,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/reset-password') ||
-    pathname.startsWith('/onboarding')
+    pathname.startsWith('/onboarding') ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/robots.txt'
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
